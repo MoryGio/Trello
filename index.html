@@ -6,365 +6,229 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     
-
-    <title>To-Do Liste - Ibrahim X Mory</title>
+    <title>Trello</title>
 </head>
-<body class="bg-gray-50">
-    <header class="bg-blue-600 text-white py-4 px-6 shadow-md">
-        <h1 class="text-2xl font-bold font-arial">Ibrahim X Mory</h1>
-    </header>
-
-    <main class="flex flex-col md:flex-row h-screen" x-data="TODOLISTE">
-        <aside class="w-full md:w-1/4 bg-white border-b md:border-r border-gray-200 p-4 md:p-6">
-            <button 
-                class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 font-medium mb-4 md:mb-6"
-                @click="FormAjtTache = true"
-            >
-                + Ajouter une tâche
+<body class="bg-gray-100 text-gray-900 font-sans transition-colors duration-300" x-data="gestionTrello" :class="{ 'dark bg-gray-900 text-white': modeSombre }">
+    <!-- Barre de navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <i data-lucide="trello" class="w-5 h-5"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight">Trello <span class="text-blue-600 dark:text-blue-400">X</span></h1>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <button @click="modeSombre = !modeSombre" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <i :data-lucide="modeSombre ? 'sun' : 'moon'" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
             </button>
+            <button @click="afficherModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Nouvelle Tâche
+            </button>
+        </div>
+    </nav>
 
-            <form class="space-y-4" x-show="FormAjtTache" @submit.prevent="
-                if ($refs.titre.value.trim() === '' || $refs.description.value.trim() === '') {
-                    alert('Veuillez remplir tous les champs.');
-                    return;
-                }
-                AjoutDeTache(Date.now(), $refs.titre.value.trim(), $refs.description.value.trim(), 'à faire', false, false);
-                FormAjtTache = false;
-                $refs.titre.value = '';
-                $refs.description.value = '';
-            ">
-                <div>
-                    <label for="titre" class="block text-sm font-medium text-gray-700 mb-2">Titre</label>
-                    <input 
-                        type="text" 
-                        id="titre" 
-                        name="titre"
-                        x-ref="titre"
-                        placeholder="Nom de la tâche"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
+    <!-- Contenu principal -->
+    <main class="p-6 max-w-7xl mx-auto" x-init="chargerIcones()">
+        <!-- Statistiques et Recherche -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div class="flex gap-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <p class="text-xs font-bold text-gray-500 uppercase mb-1">Total</p>
+                    <p class="text-2xl font-bold" x-text="taches.length"></p>
                 </div>
-
-                <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea
-                        id="description" 
-                        name="description" 
-                        x-ref="description"
-                        rows="4"
-                        placeholder="Décrivez la tâche..."
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        
-                    ></textarea>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <p class="text-xs font-bold text-gray-500 uppercase mb-1">Terminées</p>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400" x-text="taches.filter(t => t.statut === 'termine').length"></p>
                 </div>
-
-                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 font-medium">
-                    Créer la tâche
-                </button>
-                
-            </form>
-
-            <button class="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 font-medium mt-2"
-                    x-show="FormAjtTache"
-                    @click ="FormAjtTache = false;
-                        $refs.titre.value = '';
-                        $refs.description.value = '';"
-                >Annuler</button>
-        </aside>
-
-        <section class="flex-1 flex flex-col p-6 overflow-hidden">
-            <section class="bg-white rounded-lg shadow-sm p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4">
-                <select class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Toutes les tâches</option>
-                    <option>Prioritaires</option>
-                    <option>Non prioritaires</option>
-                </select>
-
+            </div>
+            <div class="relative w-full md:w-96">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
                 <input 
                     type="text" 
-                    placeholder="Rechercher des tâches..."
-                    x-model="texteRecherche"
-                    class="w-full md:flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Rechercher une tâche..."
+                    x-model="recherche"
+                    class="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
                 >
-            </section>
+            </div>
+        </div>
 
-            <section class="flex flex-col lg:flex-row gap-4 flex-1 overflow-y-auto lg:overflow-hidden break-words" x-show="texteRecherche === ''">
-                <article 
-                    class="flex-1 bg-gray-100 rounded-lg p-3 md:p-4 flex flex-col transition-all min-h-[300px] lg:min-h-0"
-                    @dragover.prevent="$el.classList.add('bg-blue-100', 'border-2', 'border-blue-400')"
-                    @dragleave="$el.classList.remove('bg-blue-100', 'border-2', 'border-blue-400')"
-                    @drop="onDrop('à faire'); $el.classList.remove('bg-blue-100', 'border-2', 'border-blue-400')"
+        <!-- Tableau des tâches -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <template x-for="col in colonnes" :key="col.id">
+                <div 
+                    class="bg-gray-200/50 dark:bg-gray-800/50 rounded-2xl p-4 min-h-[500px] flex flex-col"
+                    @dragover.prevent="survolColonne = col.id"
+                    @dragleave="survolColonne = null"
+                    @drop="deplacerTache(col.id)"
+                    :class="survolColonne === col.id ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : ''"
                 >
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800">À faire (<span x-text="TachesAFaire.length"></span> tâches)</h2>
-                        <div>
-                            <button class="text-gray-600 hover:text-gray-800 font-bold" @click="menuOptions = !menuOptions">•••</button>
-                            <div x-transition
-                                    x-show="menuOptions"
-                                    @click.outside="menuOptions = false"
-                                    class="absolute bg-white border border-gray-300 rounded-lg shadow-md"
-                                >
-                                    <ul>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 1</li>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 2</li>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 3</li>
-                                    </ul>
-                            </div>
-                        </div>
+                    <div class="flex items-center justify-between mb-4 px-2">
+                        <h3 class="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest text-xs" x-text="col.titre"></h3>
+                        <span class="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-full text-[10px] font-bold" x-text="tachesFiltrees(col.id).length"></span>
                     </div>
-                    <div class="space-y-3 overflow-y-auto flex-1">
-                        <template x-for="tache in TachesAFaire" :key="tache.id">
+
+                    <div class="space-y-4 flex-1">
+                        <template x-for="tache in tachesFiltrees(col.id)" :key="tache.id">
                             <div 
-                                class="bg-white rounded-lg p-4 shadow-sm cursor-move hover:shadow-lg transition-shadow w-full " 
+                                class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
                                 draggable="true"
-                                @dragstart="onDragStart(tache)"
+                                @dragstart="tacheEnDrag = tache"
                             >
-                                <h3 class="font-medium text-gray-900" x-text="tache.titre" x-show="!tache.enmodification"></h3>
-                                <input type="text" class="font-medium text-gray-900 mb-2" x-show="tache.enmodification" x-model="tache.titre">
-                                <p class="text-sm text-gray-600 mb-3" x-text="tache.description" x-show="!tache.enmodification" ></p>
-                                <textarea class="text-sm text-gray-600 mb-3 resize-none w-full" x-show="tache.enmodification" x-model="tache.description" rows="h-auto"></textarea>
-                                <div class="flex gap-2">
-                                    <button class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200" @click="tache.enmodification = !tache.enmodification">Modifier</button>
-                                    <button 
-                                        x-bind:class="tache.Priorité ? 'text-xs bg-red-700 text-amber-50 px-3 py-1 rounded' : 'text-xs bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200'" 
-                                        @click="tache.Priorité = !tache.Priorité"
-                                    >
-                                        Priorité
-                                    </button>
-                                    <button @click="supprimerTache(tache.id)">
-                                        <img src="poubelle-de-recyclage.png" alt="Supprimer" class="w-5">
-                                    </button>
-                                    <button class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200" x-show="tache.enmodification" @click="tache.enmodification = false">Confirmer</button>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </article>
-
-                <article 
-                    class="flex-1 bg-gray-100 rounded-lg p-3 md:p-4 flex flex-col transition-all min-h-[300px] lg:min-h-0"
-                    @dragover.prevent="$el.classList.add('bg-blue-100', 'border-2', 'border-blue-400')"
-                    @dragleave="$el.classList.remove('bg-blue-100', 'border-2', 'border-blue-400')"
-                    @drop="onDrop('en cours'); $el.classList.remove('bg-blue-100', 'border-2', 'border-blue-400')"
-                >
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800">En Cours (<span x-text="TachesEnCours.length"></span> tâche)</h2>
-                        <div>
-                            <button class="text-gray-600 hover:text-gray-800 font-bold" @click="menuOptions2 = !menuOptions2">•••</button>
-                            <div x-transition
-                                    x-show="menuOptions2"
-                                    @click.outside="menuOptions2 = false"
-                                    class="absolute bg-white border border-gray-300 rounded-lg shadow-md"
-                                >
-                                    <ul>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 1</li>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 2</li>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 3</li>
-                                    </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="space-y-3 overflow-y-auto flex-1">
-                        <template x-for="tache in TachesEnCours" :key="tache.id">
-                            <div 
-                                class="bg-white rounded-lg p-4 shadow-sm cursor-move hover:shadow-lg transition-shadow" 
-                                draggable="true"
-                                @dragstart="onDragStart(tache)"
-                            >
-                                <h3 class="font-medium text-gray-900 mb-2" x-text="tache.titre" x-show="!tache.enmodification"></h3>
-                                <input type="text" class="font-medium text-gray-900 mb-2" x-show="tache.enmodification" x-model="tache.titre">
-                                <p class="text-sm text-gray-600 mb-3" x-text="tache.description" x-show="!tache.enmodification"></p>
-                                <textarea class="text-sm text-gray-600 mb-3 resize-none w-full" x-show="tache.enmodification" x-model="tache.description"></textarea>
-                                <div class="flex gap-2">
-                                    <button class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200" @click="tache.enmodification = !tache.enmodification">Modifier</button>
-                                    <button 
-                                        x-bind:class="tache.Priorité ? 'text-xs bg-red-700 text-amber-50 px-3 py-1 rounded' : 'text-xs bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200'" 
-                                        @click="tache.Priorité = !tache.Priorité"
-                                    >
-                                        Priorité
-                                    </button>
-                                    <button @click="supprimerTache(tache.id)">
-                                        <img src="poubelle-de-recyclage.png" alt="Supprimer" class="w-5">
-                                    </button>
-                                    <button class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200" x-show="tache.enmodification" @click="tache.enmodification = false">Confirmer</button>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </article>
-
-                <article 
-                    class="flex-1 bg-gray-100 rounded-lg p-3 md:p-4 flex flex-col transition-all min-h-[300px] lg:min-h-0"
-                    @dragover.prevent="$el.classList.add('bg-blue-100', 'border-2', 'border-blue-400')"
-                    @dragleave="$el.classList.remove('bg-blue-100', 'border-2', 'border-blue-400')"
-                    @drop="onDrop('terminée'); $el.classList.remove('bg-blue-100', 'border-2', 'border-blue-400')"
-                >
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800">Terminées (<span x-text="TachesTerminee.length"></span> tâches)</h2>
-                        <div>
-                            <button class="text-gray-600 hover:text-gray-800 font-bold" @click="menuOptions3 = !menuOptions3">•••</button>
-                            <div x-transition
-                                    x-show="menuOptions3"
-                                    @click.outside="menuOptions3 = false"
-                                    class="absolute bg-white border border-gray-300 rounded-lg shadow-md right-5"
-                                >
-                                    <ul>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 1</li>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 2</li>
-                                        <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Option 3</li>
-                                    </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="space-y-3 overflow-y-auto flex-1">
-                        <template x-for="tache in TachesTerminee" :key="tache.id">
-                            <div 
-                                class="bg-white rounded-lg p-4 shadow-sm cursor-move hover:shadow-lg transition-shadow opacity-75" 
-                                draggable="true"
-                                @dragstart="onDragStart(tache)"
-                            >
-                                <h3 class="font-medium text-gray-900 mb-2 line-through" x-text="tache.titre"></h3>
-                                <p class="text-sm text-gray-600 mb-3" x-text="tache.description"></p>
-                                <div class="flex gap-2">
-                                    <button class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">Modifier</button>
-                                    <button 
-                                        x-bind:class="tache.Priorité ? 'text-xs bg-red-700 text-amber-50 px-3 py-1 rounded' : 'text-xs bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200'" 
-                                        @click="tache.Priorité = !tache.Priorité"
-                                    >
-                                        Priorité
-                                    </button>
-                                    <button @click="supprimerTache(tache.id)">
-                                        <img src="poubelle-de-recyclage.png" alt="Supprimer" class="w-5">
-                                    </button>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </article>
-            </section>
-
-            <section class="flex-1 overflow-hidden" x-show="texteRecherche !== ''">
-                <div class="bg-white rounded-lg p-4 h-full overflow-y-auto">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Résultats de recherche (<span x-text="tachesRecherchees.length"></span>)</h2>
-                    <div class="space-y-3">
-                        <template x-for="tache in tachesRecherchees" :key="tache.id">
-                            <div class="bg-gray-50 rounded-lg p-4 shadow-sm">
                                 <div class="flex justify-between items-start mb-2">
-                                    <h3 class="font-medium text-gray-900" x-text="tache.titre"></h3>
-                                    <span class="text-xs px-2 py-1 rounded" 
-                                          :class="tache.statut === 'à faire' ? 'bg-blue-100 text-blue-700' : 
-                                                  tache.statut === 'en cours' ? 'bg-yellow-100 text-yellow-700' : 
-                                                  'bg-green-100 text-green-700'"
-                                          x-text="tache.statut">
+                                    <span 
+                                        class="text-[10px] font-bold uppercase px-2 py-0.5 rounded"
+                                        :class="{
+                                            'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300': tache.priorite === 'haute',
+                                            'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300': tache.priorite === 'moyenne',
+                                            'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300': tache.priorite === 'basse'
+                                        }"
+                                        x-text="tache.priorite === 'haute' ? 'Urgent' : (tache.priorite === 'moyenne' ? 'Normal' : 'Basse')">
                                     </span>
+                                    <button @click="supprimerTache(tache.id)" class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
                                 </div>
-                                <p class="text-sm text-gray-600 mb-3" x-text="tache.description"></p>
-                                <div class="flex gap-2">
-                                    <button class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">Modifier</button>
-                                    <button 
-                                        x-bind:class="tache.Priorité ? 'text-xs bg-red-700 text-amber-50 px-3 py-1 rounded' : 'text-xs bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200'" 
-                                        @click="tache.Priorité = !tache.Priorité"
-                                    >
-                                        Priorité
-                                    </button>
-                                    <button @click="supprimerTache(tache.id)">
-                                        <img src="poubelle-de-recyclage.png" alt="Supprimer" class="w-5">
-                                    </button>
+                                <h4 class="font-bold mb-1" x-text="tache.titre"></h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" x-text="tache.description"></p>
+                                <div class="flex items-center gap-1.5 text-gray-400 text-[10px] font-medium border-t border-gray-100 dark:border-gray-700 pt-3">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                                    <span x-text="tache.dateEcheance || 'Pas de date'"></span>
                                 </div>
                             </div>
                         </template>
-                        <div x-show="tachesRecherchees.length === 0" class="text-center text-gray-500 py-8">
-                            Aucune tâche trouvée pour "<span x-text="texteRecherche"></span>"
+
+                        <!-- État vide -->
+                        <div x-show="tachesFiltrees(col.id).length === 0" class="flex-1 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl flex items-center justify-center text-gray-400 py-8">
+                            <span class="text-xs font-medium italic opacity-50">Aucune tâche</span>
                         </div>
                     </div>
                 </div>
-            </section>
-        </section>
+            </template>
+        </div>
     </main>
+
+    <!-- Fenêtre modale de création -->
+    <div x-show="afficherModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak x-transition>
+        <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl p-6" @click.outside="afficherModal = false">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Ajouter une tâche</h2>
+                <button @click="afficherModal = false" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <form @submit.prevent="ajouterTache()" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Titre</label>
+                    <input x-model="formulaire.titre" type="text" placeholder="Faire mes devoirs..." class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                    <textarea x-model="formulaire.description" rows="3" placeholder="Détails de la tâche..." class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Priorité</label>
+                        <select x-model="formulaire.priorite" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg outline-none">
+                            <option value="basse">Basse</option>
+                            <option value="moyenne">Moyenne</option>
+                            <option value="haute">Haute</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Échéance</label>
+                        <input x-model="formulaire.dateEcheance" type="date" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg outline-none">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors mt-4">
+                    Créer la tâche
+                </button>
+            </form>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('alpine:init', () => {
-            Alpine.data('TODOLISTE', () => ({
-                    FormAjtTache: false,
-                    FormModifTache: false,
-                    tacheEnCoursDeDrag: null, 
-                    menuOptions: false,
-                    menuOptions2: false,
-                    menuOptions3: false,
-                    ModePrioritaire: false,
-                    texteRecherche: '',
-                    TachesAFaire:Alpine.$persist([]),
-                    TachesEnCours: Alpine.$persist([]),
-                    TachesTerminee: Alpine.$persist([]),
+            Alpine.data('gestionTrello', () => ({
+                // Données persistantes
+                modeSombre: Alpine.$persist(false),
+                taches: Alpine.$persist([]),
+                
+                // État de l'interface
+                recherche: '',
+                afficherModal: false,
+                tacheEnDrag: null,
+                survolColonne: null,
+                
+                // Formulaire
+                formulaire: { titre: '', description: '', priorite: 'moyenne', dateEcheance: '' },
+                
+                // Structure du tableau
+                colonnes: [
+                    { id: 'a-faire', titre: 'À Faire' },
+                    { id: 'en-cours', titre: 'En Cours' },
+                    { id: 'termine', titre: 'Terminé' }
+                ],
 
+                // Initialisation
+                init() {
+                    this.$watch('modeSombre', () => this.chargerIcones());
+                    this.chargerIcones();
+                },
+
+                // Affichage des icônes Lucide
+                chargerIcones() {
+                    this.$nextTick(() => { lucide.createIcons(); });
+                },
+
+                // Filtrage des tâches selon la colonne et la recherche
+                tachesFiltrees(idColonne) {
+                    return this.taches.filter(t => {
+                        const correspondStatut = t.statut === idColonne;
+                        const correspondRecherche = t.titre.toLowerCase().includes(this.recherche.toLowerCase());
+                        return correspondStatut && correspondRecherche;
+                    });
+                },
+
+                // Ajouter une nouvelle tâche
+                ajouterTache() {
+                    if (!this.formulaire.titre.trim()) return;
                     
-                    get tachesRecherchees() {
-                        if (!this.texteRecherche || this.texteRecherche.trim() === '') {
-                            return [];
-                        }
-                        
-                        const recherche = this.texteRecherche.toLowerCase();
-                        const toutesLesTaches = [...this.TachesAFaire, ...this.TachesEnCours, ...this.TachesTerminee];
-                        
-                        return toutesLesTaches.filter(tache => 
-                            tache.titre.toLowerCase().startsWith(recherche)
-                        );
-                    },
+                    this.taches.push({
+                        id: Date.now(),
+                        ...this.formulaire,
+                        statut: 'a-faire'
+                    });
                     
-                    onDragStart(tache) {
-                        if(tache.enmodification === true) return;
-                        this.tacheEnCoursDeDrag = tache;
-                    },
-                    
-                    onDrop(nouvelleColonne) {
-                        if (!this.tacheEnCoursDeDrag) return;
-                        
-                        const tache = this.tacheEnCoursDeDrag;
-                        
-                        this.TachesAFaire = this.TachesAFaire.filter(t => t.id !== tache.id);
-                        this.TachesEnCours = this.TachesEnCours.filter(t => t.id !== tache.id);
-                        this.TachesTerminee = this.TachesTerminee.filter(t => t.id !== tache.id);
-                        
-                        tache.statut = nouvelleColonne;
-                        
-                        switch(nouvelleColonne) {
-                            case 'à faire':
-                                this.TachesAFaire.push(tache);
-                                break;
-                            case 'en cours':
-                                this.TachesEnCours.push(tache);
-                                break;
-                            case 'terminée':
-                                this.TachesTerminee.push(tache);
-                                break;
-                        }
-                        
-                        this.tacheEnCoursDeDrag = null;
-                    },
-                    
-                    AjoutDeTache(id, titre, description, statut, Priorité, enmodification) {
-                        switch(statut){
-                            case 'à faire':
-                                this.TachesAFaire.push({id, titre, description, statut, Priorité, enmodification});
-                                break;
-                            case 'en cours':
-                                this.TachesEnCours.push({id, titre, description, statut, Priorité, enmodification});
-                                break;
-                            case 'terminée':
-                                this.TachesTerminee.push({id, titre, description, statut, Priorité, enmodification});
-                                break;
-                        }
-                    },
-                    
-                    supprimerTache(id) {
-                        this.TachesAFaire = this.TachesAFaire.filter(t => t.id !== id);
-                        this.TachesEnCours = this.TachesEnCours.filter(t => t.id !== id);
-                        this.TachesTerminee = this.TachesTerminee.filter(t => t.id !== id);
+                    // Réinitialisation
+                    this.formulaire = { titre: '', description: '', priorite: 'moyenne', dateEcheance: '' };
+                    this.afficherModal = false;
+                    this.chargerIcones();
+                },
+
+                // Supprimer une tâche
+                supprimerTache(id) {
+                    this.taches = this.taches.filter(t => t.id !== id);
+                },
+
+                // Déplacer une tâche (Drag & Drop)
+                deplacerTache(nouveauStatut) {
+                    if (!this.tacheEnDrag) return;
+                    const index = this.taches.findIndex(t => t.id === this.tacheEnDrag.id);
+                    if (index !== -1) {
+                        this.taches[index].statut = nouveauStatut;
                     }
+                    this.tacheEnDrag = null;
+                    this.survolColonne = null;
                 }
-            ));
-        })
+            }));
+        });
     </script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </body>
 </html>
